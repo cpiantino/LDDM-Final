@@ -5,10 +5,11 @@ package com.caio563272.lddmfinal;
  */
 public class Quadro {
 
-    String filePath;
-    Double latitude;
-    Double longitude;
-    String date;
+    private int id;
+    private String filePath;
+    private Double latitude;
+    private Double longitude;
+    private String date;
 
     public String getFilePath() {
         return filePath;
