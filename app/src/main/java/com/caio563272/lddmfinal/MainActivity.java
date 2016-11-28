@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -28,11 +29,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,11 +55,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private double longitude = 0.0;
     String currentDateTimeString = "";
 
-    Uri imageFile;
-    ImageView imageView;
-    Bitmap help1;
-    ThumbnailUtils thumbnail;
-    String mCurrentPhotoPath;
+    static final int REQUEST_IMAGE_CAPTURE = 1;
+    private Bitmap mImageBitmap;
+    private String mCurrentPhotoPath;
+    private ImageView mImageView;
+    boolean captureComplete = false;
 
     private DatabaseHelper dbHelper;
     /**
@@ -69,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageView = (ImageView) findViewById(R.id.imageView);
+        mImageView = (ImageView) findViewById(R.id.imageView);
 
         ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
 
@@ -153,99 +157,84 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    boolean captureComplete = false;
-    Uri imageUri;
-
     public void startBoardCapture(View view) {
         startBoardCapture();
     }
 
+    private static final String TAG = "MainActivity";
+
     @TargetApi(24)
     private void startBoardCapture() {
 
-        launch_camera();
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                Log.i(TAG, "IOException");
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE);
+            }
+        }
 
-        LocationManager senLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Location location = senLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        try {
+            LocationManager senLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location location = senLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        } catch (SecurityException secErr) {
+            Log.i(TAG, "Security Exception");
+        }
 
         latitude = location.getLatitude();
         longitude = location.getLongitude();
         currentDateTimeString = DateFormat.getDateTimeInstance().format(new Date());
+
+        TextView latitudeText = (TextView) findViewById(R.id.textViewCoordenadas);
+        TextView dataText = (TextView) findViewById(R.id.textViewDataCompleta);
+
+        latitudeText.setText("Lat:"+Double.toString(latitude)+", Lon:"+Double.toString(longitude));
+        dataText.setText(currentDateTimeString);
     }
 
-    public void launch_camera() {
-        // the intent is my camera
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        //getting uri of the file
-        imageFile = Uri.fromFile(getFile());
-
-        //Setting the file Uri to my photo
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageFile);
-
-        if(intent.resolveActivity(getPackageManager())!=null)
-        {
-            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
-        }
-    }
-
-    //this method will create and return the path to the image file
     @TargetApi(24)
-    private File getFile() {
-        File folder = Environment.getExternalStoragePublicDirectory("/From_camera/imagens");// the file path
-
-        //if it doesn't exist the folder will be created
-        if(!folder.exists())
-        {folder.mkdir();}
-
+    private File createImageFile() throws IOException {
+        // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_"+ timeStamp + "_";
-        File image_file = null;
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  // prefix
+                ".jpg",         // suffix
+                storageDir      // directory
+        );
 
-        try {
-            image_file = File.createTempFile(imageFileName,".jpg",folder);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        mCurrentPhotoPath = image_file.getAbsolutePath();
-        return image_file;
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        captureComplete = true;
+        return image;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == REQUEST_IMAGE_CAPTURE) {
-            if(resultCode == Activity.RESULT_OK) {
-                try {
-                    help1 = MediaStore.Images.Media.getBitmap(getContentResolver(), imageFile);
-                    imageView.setImageBitmap( thumbnail.extractThumbnail(help1, help1.getWidth(), help1.getHeight()));
-
-                    captureComplete = true;
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            try {
+                mImageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), Uri.parse(mCurrentPhotoPath));
+                mImageView.setImageBitmap(mImageBitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
 
     public void insertData(View view) {
-        insertData("", latitude, longitude, currentDateTimeString);
-    }
-
-    private void insertData(String photo, double latitude, double longitude, String date) {
-
-        if (captureComplete) {
-
-            ContentValues values = new ContentValues();
-
-            values.put(DatabaseHelper.PHOTO, photo);
-            values.put(DatabaseHelper.LATITUDE, latitude);
-            values.put(DatabaseHelper.LONGITUDE, longitude);
-            values.put(DatabaseHelper.DATE, date);
-            dbHelper.getWritableDatabase().insert(DatabaseHelper.TABLE_NAME, null, values);
-            values.clear();
-            captureComplete = false;
-        } else {
+        if (mCurrentPhotoPath!=null && captureComplete) insertData(mCurrentPhotoPath, latitude, longitude, currentDateTimeString);
+        else {
             AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
             alertDialog.setTitle("Não há quadro!");
             alertDialog.setMessage("Tire uma foto do quadro primeiro para poder salvar :)");
@@ -257,6 +246,37 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     });
             alertDialog.show();
         }
+    }
+
+    public void addData(Quadro quadro) {
+        if (mCurrentPhotoPath!=null && captureComplete) insertData(mCurrentPhotoPath, latitude, longitude, currentDateTimeString);
+        else {
+            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+            alertDialog.setTitle("Não há quadro!");
+            alertDialog.setMessage("Tire uma foto do quadro primeiro para poder salvar :)");
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+            alertDialog.show();
+        }
+    }
+
+    private void insertData(String photo, double latitude, double longitude, String date) {
+        ContentValues values = new ContentValues();
+        values.put(DatabaseHelper.PHOTO, photo);
+        values.put(DatabaseHelper.LATITUDE, latitude);
+        values.put(DatabaseHelper.LONGITUDE, longitude);
+        values.put(DatabaseHelper.DATE, date);
+        dbHelper.getWritableDatabase().insert(DatabaseHelper.TABLE_NAME, null, values);
+        values.clear();
+        captureComplete = false;
+    }
+
+    public void testarData(View view) {
+
     }
 
     private void clearAll() {

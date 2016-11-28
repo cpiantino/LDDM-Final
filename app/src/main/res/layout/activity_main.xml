@@ -82,20 +82,27 @@
         android:text="Tirar Foto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/button2"
+        android:id="@+id/buttonTirarFoto"
         android:onClick="startBoardCapture"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="56dp" />
+        android:layout_alignTop="@+id/buttonSalvarFoto"
+        android:layout_alignParentStart="true" />
 
     <Button
         android:text="Salvar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/button"
+        android:id="@+id/buttonSalvarFoto"
         android:onClick="insertData"
+        android:layout_alignTop="@+id/buttonTestar"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:text="Testar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonTestar"
+        android:onClick="testarData"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="52dp" />
+        android:layout_alignEnd="@+id/imageView" />
 
 </RelativeLayout>
