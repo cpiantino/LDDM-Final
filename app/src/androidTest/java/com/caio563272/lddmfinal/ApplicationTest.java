@@ -1,4 +1,4 @@
-package com.caio563272.lddmtp2;
+package com.caio563272.lddmfinal;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @TargetApi(24)
     private void startBoardCapture() {
-        
+
         launch_camera();
 
         LocationManager senLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
