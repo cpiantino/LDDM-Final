@@ -41,4 +41,5 @@ public class Quadro {
     public void setDate(String date) {
         this.date = date;
     }
+
 }

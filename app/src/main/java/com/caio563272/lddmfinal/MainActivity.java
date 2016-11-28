@@ -264,6 +264,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    public void testarData(View view) {
+
+    }
+
+
     public void saveQuadro(Quadro quadro) {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.PHOTO, quadro.getFilePath());
@@ -276,12 +281,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     public Quadro getQuadro() {
-
-    }
-
-
-    public void testarData(View view) {
-
+        return null;
     }
 
 
