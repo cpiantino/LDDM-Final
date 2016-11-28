@@ -61,12 +61,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private ImageView mImageView;
     boolean captureComplete = false;
 
+    private static final String TAG = "MainActivity";
     private DatabaseHelper dbHelper;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
+
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case 1: {
@@ -119,15 +122,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+
     protected void onPause() {
         super.onPause();
         senSensorManager.unregisterListener(this);
     }
-
     protected void onResume() {
         super.onResume();
         senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
     }
+
 
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -157,12 +161,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+
     public void startBoardCapture(View view) {
         startBoardCapture();
     }
-
-    private static final String TAG = "MainActivity";
-
     @TargetApi(24)
     private void startBoardCapture() {
 
@@ -201,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         dataText.setText(currentDateTimeString);
     }
 
+
     @TargetApi(24)
     private File createImageFile() throws IOException {
         // Create an image file name
@@ -220,6 +223,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         return image;
     }
 
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
@@ -231,6 +235,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         }
     }
+
 
     public void insertData(View view) {
         if (mCurrentPhotoPath!=null && captureComplete) insertData(mCurrentPhotoPath, latitude, longitude, currentDateTimeString);
@@ -247,23 +252,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             alertDialog.show();
         }
     }
-
-    public void addData(Quadro quadro) {
-        if (mCurrentPhotoPath!=null && captureComplete) insertData(mCurrentPhotoPath, latitude, longitude, currentDateTimeString);
-        else {
-            AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
-            alertDialog.setTitle("Não há quadro!");
-            alertDialog.setMessage("Tire uma foto do quadro primeiro para poder salvar :)");
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-            alertDialog.show();
-        }
-    }
-
     private void insertData(String photo, double latitude, double longitude, String date) {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.PHOTO, photo);
@@ -275,17 +263,37 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         captureComplete = false;
     }
 
+
+    public void saveQuadro(Quadro quadro) {
+        ContentValues values = new ContentValues();
+        values.put(DatabaseHelper.PHOTO, quadro.getFilePath());
+        values.put(DatabaseHelper.LATITUDE, quadro.getLatitude());
+        values.put(DatabaseHelper.LONGITUDE, quadro.getLongitude());
+        values.put(DatabaseHelper.DATE, quadro.getDate());
+        dbHelper.getWritableDatabase().insert(DatabaseHelper.TABLE_NAME, null, values);
+        values.clear();
+    }
+
+
+    public Quadro getQuadro() {
+
+    }
+
+
     public void testarData(View view) {
 
     }
+
 
     private void clearAll() {
         dbHelper.getWritableDatabase().delete(DatabaseHelper.TABLE_NAME, null, null);
     }
 
+
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
+
 
     @Override
     public void onStart() {
@@ -306,6 +314,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         );
         AppIndex.AppIndexApi.start(client, viewAction);
     }
+
 
     @Override
     public void onStop() {
